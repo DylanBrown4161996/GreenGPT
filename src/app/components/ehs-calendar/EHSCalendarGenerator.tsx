@@ -2,6 +2,13 @@
 
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
 import { PRO_PRICE_MO } from "@/lib/ehs-calendar/pricing";
+import {
+  CATEGORIES,
+  RULES,
+  genEvents,
+  type CategoryKey,
+  type LandingEvent,
+} from "@/lib/ehs-calendar/rulesEngine";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // THE GREEN EXECUTIVE BRIEFING — EHS COMPLIANCE CALENDAR GENERATOR
@@ -96,154 +103,9 @@ const FACILITY_FLAGS = {
   lead_exposure: { label: "Lead exposure potential", icon: "🧪", tier: "pro" },
 };
 
-const CATEGORIES = {
-  filing: { label: "Regulatory Filing", color: "#E8614D", icon: "📋" },
-  inspection: { label: "Inspection / Monitoring", color: "#3B82F6", icon: "🔍" },
-  training: { label: "Training / Certification", color: "#10B981", icon: "🎓" },
-  permit: { label: "Permit / License", color: "#D4A017", icon: "📄" },
-  reporting: { label: "Reporting / Recordkeeping", color: "#8B5CF6", icon: "📊" },
-  maintenance: { label: "Equipment Maintenance", color: "#06B6D4", icon: "🔧" },
-};
-
-type CategoryKey = keyof typeof CATEGORIES;
-
-/** Row from the static rules table (before expansion into dated events). */
-interface EhsRule {
-  id?: string;
-  name: string;
-  category: CategoryKey;
-  industries: "all" | string[];
-  jurisdictions: string[];
-  conditions: string[];
-  employeeMin?: number;
-  monthlyDay?: number;
-  weeklyDay?: string;
-  quarterlyMonths?: number[];
-  month?: number;
-  day?: number;
-  description?: string;
-  citation?: string;
-  frequency?: string;
-  authority?: string;
-  endMonth?: number;
-  endDay?: number;
-}
-
-/** Rule plus generated calendar fields. */
-type EhsCalendarEvent = EhsRule & {
-  eventMonth: number;
-  eventDay: number | null;
-  sk: number;
-  note?: string;
-};
-
-const RULES: EhsRule[] = [
-  // ── UNIVERSAL FEDERAL ──
-  { id: "osha300a", name: "OSHA 300A Log Posting", category: "reporting", month: 2, day: 1, endMonth: 4, endDay: 30, description: "Post OSHA 300A Summary (Feb 1 – Apr 30). Required for establishments with 11+ employees.", citation: "29 CFR 1904.32", frequency: "annual", authority: "OSHA", industries: "all", jurisdictions: ["federal"], conditions: [], employeeMin: 11 },
-  { id: "osha300_elec", name: "OSHA Electronic Injury Reporting", category: "filing", month: 3, day: 2, description: "Submit Form 300A data electronically via OSHA ITA portal.", citation: "29 CFR 1904.41", frequency: "annual", authority: "OSHA", industries: "all", jurisdictions: ["federal"], conditions: [], employeeMin: 20 },
-  { id: "tier2", name: "Tier II Chemical Inventory (EPCRA §312)", category: "filing", month: 3, day: 1, description: "Submit Tier II hazardous chemical inventory to SERC, LEPC, and local fire dept.", citation: "40 CFR 370", frequency: "annual", authority: "EPA", industries: "all", jurisdictions: ["federal"], conditions: ["hazmat_storage"] },
-  { id: "tri_formr", name: "TRI Form R / Form A (EPCRA §313)", category: "filing", month: 7, day: 1, description: "Toxic Release Inventory for listed chemicals above reporting thresholds.", citation: "40 CFR 372", frequency: "annual", authority: "EPA", industries: ["manufacturing", "oil_gas", "food_bev"], jurisdictions: ["federal"], conditions: ["hazmat_storage"], employeeMin: 10 },
-  { id: "hazwaste_biennial", name: "Hazardous Waste Biennial Report", category: "filing", month: 3, day: 1, description: "EPA Form 8700-13 A/B for LQGs (even-numbered years).", citation: "40 CFR 262.41", frequency: "biennial", authority: "EPA", industries: "all", jurisdictions: ["federal"], conditions: ["hazwaste_gen"] },
-  { id: "spcc_review", name: "SPCC Plan Annual Review", category: "inspection", month: 1, day: 15, description: "Review and re-certify Spill Prevention, Control, and Countermeasure plan.", citation: "40 CFR 112.5", frequency: "annual", authority: "EPA", industries: ["manufacturing", "oil_gas", "warehousing"], jurisdictions: ["federal"], conditions: ["hazmat_storage"] },
-  { id: "stormwater_dmr", name: "Stormwater DMR Submission", category: "filing", quarterlyMonths: [3, 6, 9, 12], day: 28, description: "Discharge Monitoring Report for NPDES/stormwater permit.", citation: "40 CFR 122", frequency: "quarterly", authority: "EPA", industries: "all", jurisdictions: ["federal"], conditions: ["wastewater"] },
-  { id: "psm_audit", name: "PSM Compliance Audit", category: "inspection", month: 1, day: 1, description: "Process Safety Management compliance audit (min. every 3 years).", citation: "29 CFR 1910.119(o)", frequency: "annual", authority: "OSHA", industries: ["manufacturing", "oil_gas", "food_bev"], jurisdictions: ["federal"], conditions: ["psm_rmp"] },
-  { id: "rmp_update", name: "RMP Plan Review", category: "filing", month: 6, day: 21, description: "Review Risk Management Plan; resubmit every 5 years or post-incident.", citation: "40 CFR 68", frequency: "annual", authority: "EPA", industries: ["manufacturing", "oil_gas", "food_bev"], jurisdictions: ["federal"], conditions: ["psm_rmp"] },
-
-  // ── TRAINING ──
-  { id: "hazcom", name: "HazCom / GHS Refresher", category: "training", month: 1, day: 15, description: "Annual Hazard Communication training — SDS, labeling, PPE.", citation: "29 CFR 1910.1200(h)", frequency: "annual", authority: "OSHA", industries: "all", jurisdictions: ["federal"], conditions: ["hazmat_storage"] },
-  { id: "hazwoper", name: "HAZWOPER 8-hr Refresher", category: "training", month: 3, day: 15, description: "Annual refresher for HAZWOPER-certified workers.", citation: "29 CFR 1910.120(e)(8)", frequency: "annual", authority: "OSHA", industries: ["manufacturing", "oil_gas", "construction"], jurisdictions: ["federal"], conditions: ["hazmat_storage"] },
-  { id: "bbp", name: "Bloodborne Pathogens Training", category: "training", month: 2, day: 1, description: "Annual BBP training for occupationally exposed employees.", citation: "29 CFR 1910.1030(g)(2)", frequency: "annual", authority: "OSHA", industries: ["healthcare", "construction"], jurisdictions: ["federal"], conditions: [] },
-  { id: "forklift", name: "Forklift Operator Re-Evaluation", category: "training", month: 4, day: 1, description: "PIT operator competency evaluation (every 3 years min).", citation: "29 CFR 1910.178(l)", frequency: "triennial", authority: "OSHA", industries: "all", jurisdictions: ["federal"], conditions: ["powered_vehicles"] },
-  { id: "confined", name: "Confined Space Entry Training", category: "training", month: 5, day: 1, description: "PRCS program review & entrant/attendant/supervisor refresher.", citation: "29 CFR 1910.146(g)", frequency: "annual", authority: "OSHA", industries: ["manufacturing", "oil_gas", "construction"], jurisdictions: ["federal"], conditions: ["confined_spaces"] },
-  { id: "fall", name: "Fall Protection Training", category: "training", month: 2, day: 15, description: "Annual fall protection training for workers at heights >6 ft.", citation: "29 CFR 1926.503", frequency: "annual", authority: "OSHA", industries: ["construction"], jurisdictions: ["federal"], conditions: ["fall_hazards"] },
-  { id: "hearing", name: "Hearing Conservation Program", category: "training", month: 6, day: 1, description: "Annual audiometric testing + training for noise-exposed workers.", citation: "29 CFR 1910.95", frequency: "annual", authority: "OSHA", industries: ["manufacturing", "construction", "oil_gas"], jurisdictions: ["federal"], conditions: ["noise_exposure"] },
-  { id: "rcra_train", name: "RCRA Hazardous Waste Training", category: "training", month: 1, day: 31, description: "Annual training for personnel managing hazardous waste.", citation: "40 CFR 265.16", frequency: "annual", authority: "EPA", industries: "all", jurisdictions: ["federal"], conditions: ["hazwaste_gen"] },
-  { id: "radiation", name: "Radiation Safety Refresher", category: "training", month: 4, day: 15, description: "Annual refresher — dosimetry, ALARA, emergency procedures.", citation: "10 CFR 19.12", frequency: "annual", authority: "NRC", industries: ["healthcare"], jurisdictions: ["federal"], conditions: ["radiation"] },
-
-  // ── INSPECTIONS / MAINTENANCE ──
-  { id: "fire_monthly", name: "Fire Extinguisher Monthly Check", category: "inspection", monthlyDay: 1, description: "Visual inspection of all portable fire extinguishers.", citation: "29 CFR 1910.157(e)", frequency: "monthly", authority: "OSHA", industries: "all", jurisdictions: ["federal"], conditions: [] },
-  { id: "fire_annual", name: "Fire Extinguisher Annual Service", category: "maintenance", month: 1, day: 10, description: "Professional annual maintenance per NFPA 10.", citation: "NFPA 10 §7.3", frequency: "annual", authority: "NFPA", industries: "all", jurisdictions: ["federal"], conditions: [] },
-  { id: "eyewash_weekly", name: "Eyewash / Shower Weekly Test", category: "inspection", weeklyDay: "Monday", description: "Activate plumbed eyewash stations and safety showers.", citation: "ANSI Z358.1 §5", frequency: "weekly", authority: "ANSI", industries: "all", jurisdictions: ["federal"], conditions: ["hazmat_storage"] },
-  { id: "crane", name: "Crane / Hoist Annual Inspection", category: "maintenance", month: 3, day: 1, description: "Annual thorough examination of cranes, hoists, lifting devices.", citation: "29 CFR 1910.179(j)", frequency: "annual", authority: "OSHA", industries: ["manufacturing", "construction", "warehousing"], jurisdictions: ["federal"], conditions: [] },
-  { id: "generator", name: "Emergency Generator Monthly Test", category: "maintenance", monthlyDay: 15, description: "Monthly load test per NFPA 110.", citation: "NFPA 110 §8.4", frequency: "monthly", authority: "NFPA", industries: "all", jurisdictions: ["federal"], conditions: [] },
-  { id: "ldar", name: "LDAR Fugitive Emissions Monitoring", category: "inspection", quarterlyMonths: [1, 4, 7, 10], day: 15, description: "Leak Detection & Repair for valves, pumps, connectors.", citation: "40 CFR 60/63", frequency: "quarterly", authority: "EPA", industries: ["manufacturing", "oil_gas"], jurisdictions: ["federal"], conditions: ["air_permits"] },
-  { id: "boiler", name: "Boiler / Pressure Vessel Inspection", category: "maintenance", month: 9, day: 1, description: "Annual boiler and pressure vessel inspection.", citation: "ASME / State", frequency: "annual", authority: "State", industries: ["manufacturing", "healthcare", "food_bev"], jurisdictions: ["federal"], conditions: [] },
-  { id: "ammonia", name: "Ammonia System Quarterly Check", category: "maintenance", quarterlyMonths: [1, 4, 7, 10], day: 1, description: "Inspection of ammonia refrigeration components & safety devices.", citation: "IIAR 6 / 29 CFR 1910.119", frequency: "quarterly", authority: "OSHA/IIAR", industries: ["food_bev", "warehousing"], jurisdictions: ["federal"], conditions: ["ammonia_refrig"] },
-
-  // ── CALIFORNIA ──
-  { id: "ca_prop65", name: "Prop 65 Warning Review", category: "reporting", month: 1, day: 31, description: "Review Proposition 65 chemical exposure warnings & signage.", citation: "CA HSC §25249.6", frequency: "annual", authority: "OEHHA", industries: "all", jurisdictions: ["CA"], conditions: ["hazmat_storage"] },
-  { id: "ca_hmbp", name: "HMBP / CUPA Annual Filing", category: "filing", month: 3, day: 1, description: "Submit Hazardous Materials Business Plan via CERS portal.", citation: "CA HSC §25505", frequency: "annual", authority: "CalEPA", industries: "all", jurisdictions: ["CA"], conditions: ["hazmat_storage"] },
-  { id: "ca_iipp", name: "IIPP Annual Review", category: "inspection", month: 2, day: 15, description: "Review & update Injury and Illness Prevention Program.", citation: "8 CCR §3203", frequency: "annual", authority: "Cal/OSHA", industries: "all", jurisdictions: ["CA"], conditions: [] },
-  { id: "ca_heat", name: "Heat Illness Prevention Plan Update", category: "inspection", month: 4, day: 1, description: "Update Heat Illness Prevention procedures before warm season.", citation: "8 CCR §3395", frequency: "annual", authority: "Cal/OSHA", industries: ["construction", "warehousing"], jurisdictions: ["CA"], conditions: [] },
-
-  // ── TEXAS ──
-  { id: "tx_emi", name: "TCEQ Emissions Inventory", category: "filing", month: 3, day: 31, description: "Annual point source emissions inventory submission.", citation: "30 TAC §101.10", frequency: "annual", authority: "TCEQ", industries: ["manufacturing", "oil_gas"], jurisdictions: ["TX"], conditions: ["air_permits"] },
-  { id: "tx_tier2", name: "TCEQ Tier II Filing", category: "filing", month: 3, day: 1, description: "Texas-specific Tier II with additional LEPC requirements.", citation: "THSC §505", frequency: "annual", authority: "TCEQ", industries: "all", jurisdictions: ["TX"], conditions: ["hazmat_storage"] },
-  { id: "tx_sw", name: "TPDES Stormwater Renewal", category: "permit", month: 8, day: 1, description: "Multi-Sector General Permit review & NOI renewal.", citation: "30 TAC §281", frequency: "annual", authority: "TCEQ", industries: ["manufacturing", "construction"], jurisdictions: ["TX"], conditions: ["wastewater"] },
-
-  // ── NEW YORK ──
-  { id: "ny_crk", name: "NY Community Right-to-Know Filing", category: "filing", month: 3, day: 1, description: "Chemical reporting under NY Community Right-to-Know.", citation: "NY ECL §37", frequency: "annual", authority: "NY DEC", industries: "all", jurisdictions: ["NY"], conditions: ["hazmat_storage"] },
-  { id: "ny_bulk", name: "PBS / CBS Registration Renewal", category: "permit", month: 7, day: 1, description: "Petroleum / Chemical Bulk Storage registration renewal.", citation: "6 NYCRR §613", frequency: "annual", authority: "NY DEC", industries: ["manufacturing", "oil_gas", "warehousing"], jurisdictions: ["NY"], conditions: ["hazmat_storage"] },
-];
-
 // ─── ENGINE ────────────────────────────────────────────────────────────────
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTH_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-function generateEvents(
-  rules: EhsRule[],
-  industry: string,
-  jurisdictions: string[],
-  flags: string[],
-  employeeCount: number
-): EhsCalendarEvent[] {
-  const events: EhsCalendarEvent[] = [];
-  const activeJ = new Set(["federal", ...jurisdictions]);
-  const activeF = new Set(flags);
-  for (const r of rules) {
-    if (r.industries !== "all" && !r.industries.includes(industry)) continue;
-    if (!r.jurisdictions.some((j: string) => activeJ.has(j))) continue;
-    if (r.conditions.length > 0 && !r.conditions.some((c: string) => activeF.has(c))) continue;
-    if (r.employeeMin && employeeCount < r.employeeMin) continue;
-    if (r.monthlyDay != null) {
-      for (let m = 0; m < 12; m++) {
-        events.push({
-          ...r,
-          eventMonth: m,
-          eventDay: r.monthlyDay,
-          sk: m * 100 + r.monthlyDay,
-        });
-      }
-    } else if (r.weeklyDay) {
-      for (let m = 0; m < 12; m++) {
-        events.push({
-          ...r,
-          eventMonth: m,
-          eventDay: null,
-          sk: m * 100 + 1,
-          note: `Every ${r.weeklyDay}`,
-        });
-      }
-    } else if (r.quarterlyMonths && r.day != null) {
-      for (const qm of r.quarterlyMonths) {
-        events.push({
-          ...r,
-          eventMonth: qm - 1,
-          eventDay: r.day,
-          sk: (qm - 1) * 100 + r.day,
-        });
-      }
-    } else if (r.month && r.day != null) {
-      events.push({
-        ...r,
-        eventMonth: r.month - 1,
-        eventDay: r.day,
-        sk: (r.month - 1) * 100 + r.day,
-      });
-    }
-  }
-  return events.sort((a, b) => a.sk - b.sk);
-}
 
 // ─── ANIMATIONS ────────────────────────────────────────────────────────────
 const keyframes = `
@@ -410,10 +272,10 @@ function FlagToggle({
 
 // ─── CALENDAR VIEWS ────────────────────────────────────────────────────────
 
-function MonthGrid({ events }: { events: EhsCalendarEvent[] }) {
+function MonthGrid({ events }: { events: LandingEvent[] }) {
   const byMonth = useMemo(() => {
-    const m: EhsCalendarEvent[][] = Array.from({ length: 12 }, () => []);
-    events.forEach((e) => m[e.eventMonth].push(e));
+    const m: LandingEvent[][] = Array.from({ length: 12 }, () => []);
+    events.forEach((e) => m[e.eM].push(e));
     return m;
   }, [events]);
 
@@ -452,7 +314,7 @@ function MonthGrid({ events }: { events: EhsCalendarEvent[] }) {
                 background: CATEGORIES[e.category as CategoryKey]?.color,
               }} />
               <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 11, color: BRAND.slate, lineHeight: 1.35, fontWeight: 300 }}>
-                {e.eventDay && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, marginRight: 4, color: BRAND.forest, fontSize: 10 }}>{e.eventDay}</span>}
+                {e.eD && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, marginRight: 4, color: BRAND.forest, fontSize: 10 }}>{e.eD}</span>}
                 {e.name}
               </div>
             </div>
@@ -466,12 +328,12 @@ function MonthGrid({ events }: { events: EhsCalendarEvent[] }) {
   );
 }
 
-function TimelineView({ events }: { events: EhsCalendarEvent[] }) {
+function TimelineView({ events }: { events: LandingEvent[] }) {
   const byMonth = useMemo(() => {
-    const m: Record<number, EhsCalendarEvent[]> = {};
+    const m: Record<number, LandingEvent[]> = {};
     events.forEach((e) => {
-      if (!m[e.eventMonth]) m[e.eventMonth] = [];
-      m[e.eventMonth].push(e);
+      if (!m[e.eM]) m[e.eM] = [];
+      m[e.eM].push(e);
     });
     return m;
   }, [events]);
@@ -504,7 +366,7 @@ function TimelineView({ events }: { events: EhsCalendarEvent[] }) {
                 color: CATEGORIES[e.category as CategoryKey]?.color,
                 background: `${CATEGORIES[e.category as CategoryKey]?.color}12`, padding: "3px 6px",
                 borderRadius: 6,
-              }}>{e.eventDay || "~"}</div>
+              }}>{e.eD || "~"}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 13.5, color: BRAND.charcoal, marginBottom: 3 }}>{e.name}</div>
                 <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 11.5, color: "#777", fontWeight: 300, lineHeight: 1.45 }}>{e.description}</div>
@@ -515,7 +377,11 @@ function TimelineView({ events }: { events: EhsCalendarEvent[] }) {
                     background: `${CATEGORIES[e.category as CategoryKey]?.color}15`, color: CATEGORIES[e.category as CategoryKey]?.color,
                   }}>{CATEGORIES[e.category as CategoryKey]?.label}</span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#666" }}>{e.authority}</span>
-                  {e.citation && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#999" }}>{e.citation}</span>}
+                  {e.citation && (e.sourceUrl ? (
+                    <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: BRAND.forest, textDecoration: "none" }}>{e.citation}</a>
+                  ) : (
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#999" }}>{e.citation}</span>
+                  ))}
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#666" }}>{e.frequency}</span>
                 </div>
               </div>
@@ -527,7 +393,7 @@ function TimelineView({ events }: { events: EhsCalendarEvent[] }) {
   );
 }
 
-function Stats({ events }: { events: EhsCalendarEvent[] }) {
+function Stats({ events }: { events: LandingEvent[] }) {
   const stats = useMemo(() => {
     const s = {} as Record<CategoryKey, number>;
     (Object.keys(CATEGORIES) as CategoryKey[]).forEach((k) => (s[k] = 0));
@@ -616,7 +482,7 @@ export default function EHSCalendarGenerator({
 
   const events = useMemo(() => {
     if (!industry) return [];
-    let e = generateEvents(RULES, industry, jurisdictions, flags, employees);
+    let e = genEvents(RULES, industry, jurisdictions, flags, employees);
     if (filterCat) e = e.filter((ev) => ev.category === filterCat);
     return e;
   }, [industry, jurisdictions, flags, employees, filterCat]);
@@ -889,7 +755,7 @@ export default function EHSCalendarGenerator({
                     Unlock state-specific obligations, export, and reminders
                   </h3>
                   <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 300, opacity: 0.7, lineHeight: 1.6, margin: "0 0 20px", maxWidth: 560 }}>
-                    Pro adds 8 state jurisdictions, 8 additional facility flags, .ics calendar export, email reminders at 30/60/90 days, CFR citation links, and document attachment per obligation.
+                    Pro adds 8 state jurisdictions, 8 additional facility flags, .ics calendar export, email reminders at 30/60/90 days, and document attachment per obligation.
                   </p>
                   <div style={{ display: "flex", gap: 12 }}>
                     <button

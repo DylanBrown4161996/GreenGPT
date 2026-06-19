@@ -469,7 +469,7 @@ export default function EHSCalendarLanding() {
               Unlock full compliance coverage
             </h3>
             <p style={{ fontSize: 14, color: "#666", fontWeight: 300, lineHeight: 1.6, margin: "0 0 20px" }}>
-              Pro includes 8 state jurisdictions, all 12 facility flags, .ics calendar export, email reminders at 30/60/90 days, and CFR citation links.
+              Pro includes 8 state jurisdictions, all 12 facility flags, .ics calendar export, email reminders at 30/60/90 days, and document attachment per obligation.
             </p>
             <div style={{ display: "flex", gap: 12 }}>
               <Btn primary onClick={handleUpgrade} disabled={billingLoading} style={{ flex: 1, background: B.forest }}>
@@ -817,7 +817,12 @@ export default function EHSCalendarLanding() {
                                   <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                                     <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", background: `${CATEGORIES[e.category as CategoryKey]?.color}15`, color: CATEGORIES[e.category as CategoryKey]?.color }}>{CATEGORIES[e.category as CategoryKey]?.label}</span>
                                     <span style={{ fontFamily: mono, fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#666" }}>{e.authority}</span>
-                                    {e.citation && <span style={{ fontFamily: mono, fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#999" }}>{e.citation}</span>}
+                                    {e.citation && (e.sourceUrl ? (
+                                      <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontFamily: mono, fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: B.forest, textDecoration: "none" }}>{e.citation}</a>
+                                    ) : (
+                                      <span style={{ fontFamily: mono, fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#999" }}>{e.citation}</span>
+                                    ))}
+                                    {e.frequency && <span style={{ fontFamily: mono, fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#F3F4F6", color: "#666" }}>{e.frequency}</span>}
                                   </div>
                                   {proAccess && email.trim() && (
                                     <DocumentUploader
@@ -962,7 +967,7 @@ export default function EHSCalendarLanding() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, maxWidth: 820, margin: "0 auto" }}>
           {[
             { tier: "Free", price: "$0", sub: "forever", features: ["Federal rules only", "4 facility hazard flags", "Grid + timeline views", "Category filtering"], cta: "Current plan", disabled: true, bg: B.bone },
-            { tier: "Pro", price: PRO_PRICE, sub: "/month", features: ["8 state jurisdictions", "All 12 facility flags", ".ics calendar export", "Email reminders (30/60/90 days)", "CFR citation links", "Document attachment"], cta: "Upgrade to Pro", featured: true, bg: B.white },
+            { tier: "Pro", price: PRO_PRICE, sub: "/month", features: ["8 state jurisdictions", "All 12 facility flags", ".ics calendar export", "Email reminders (30/60/90 days)", "Document attachment"], cta: "Upgrade to Pro", featured: true, bg: B.white },
             { tier: "Enterprise", price: "$149", sub: "/month", features: ["Everything in Pro", "Multi-facility dashboard (coming soon)", "Team member access", "Custom rule engine", "Priority support", "Quarterly compliance review call"], cta: enterpriseAccess ? "Current plan" : "Contact us", disabled: enterpriseAccess, bg: B.bone },
           ].map((p, i) => {
             const ctaStyle: CSSProperties = {
