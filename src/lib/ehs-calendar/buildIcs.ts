@@ -60,6 +60,7 @@ function buildDescription(ev: LandingEvent): string {
   const bits = [
     ev.description,
     ev.citation && `Citation: ${ev.citation}`,
+    ev.sourceUrl && `Source: ${ev.sourceUrl}`,
     ev.frequency && `Frequency: ${ev.frequency}`,
     ev.authority && `Authority: ${ev.authority}`,
     ev.note,

@@ -46,7 +46,7 @@
 - [x] Open `components/EHSCalendarGenerator.tsx` (or similar)
 - [x] Removed `startProLocal()` bypass — upgrade requires checkout callback or modal
 - [x] `EHSCalendarLanding.tsx` gates Pro on `/api/billing/entitlement` (primary UI at `/`)
-- [ ] Test: log in as free user → Pro features should be locked
+- [x] Test: log in as free user → Pro features should be locked — verified Jun 9, 2026
 
 **Files:**
 ```
@@ -79,7 +79,7 @@ src/app/api/ehs-calendar/export/route.ts
 
 - [x] As a Pro user, `POST /api/ehs-calendar/email` → `{ ok: true }` (Resend on Vercel)
 - [x] Check inbox at dylanbrown416@gmail.com for the .ics attachment (sent Jun 4, 2026)
-- [ ] Confirm the email renders correctly and the .ics opens in a calendar app (manual inbox check)
+- [x] Confirm the email renders correctly and the .ics opens in a calendar app — verified Jun 9, 2026
 - [x] Free user blocked — HTTP 403 on email
 
 **Files:**
@@ -99,7 +99,7 @@ src/app/api/ehs-calendar/email/route.ts  (now requires Pro/Enterprise)
 - [x] Create `app/api/reminders/send/route.ts` — cron auth via `CRON_SECRET`
 - [x] Create `vercel.json` cron (daily 13:00 UTC)
 - [x] Sync deadlines on export/email/generate via `sync-reminders` + export/email hooks
-- [ ] Test: insert a fake deadline 29 days from today → run the route manually → confirm email arrives
+- [x] Test: insert a fake deadline 29 days from today → run the route manually → confirm email arrives — verified Jun 9, 2026
 - [x] Cron route: `POST /api/reminders/send` with `CRON_SECRET` → 200 (`sent=0` when no bucket match)
 - [x] `deadline_reminders` rows created on export/email for Pro user
 - [x] Mark `reminded_30 = true` after send so it doesn't re-send
@@ -224,11 +224,11 @@ app/api/ask/route.ts
 |---|---|---|
 | Stripe env vars fix | ✅ Production verified | Day 1 |
 | Stripe end-to-end test | ✅ `scripts/verify-stripe-e2e.mjs` | Day 1 |
-| Pro frontend gating | ✅ Code complete | Day 2 |
+| Pro frontend gating | ✅ Verified Jun 9 | Day 2 |
 | Enterprise gating | ✅ Code complete | Day 2 |
 | .ics export (live test) | ✅ Production verified | Day 2 |
-| Email my calendar (live test) | ✅ Production verified | Day 2 |
-| Email reminders (30/60/90d) | ✅ Code complete | Day 3 |
+| Email my calendar (live test) | ✅ Fully verified (calendar opens) | Day 2 |
+| Email reminders (30/60/90d) | ✅ E2E verified Jun 9 | Day 3 |
 | Document attachments | ✅ Code complete | Day 4 |
 | Multi-facility support | ⏸ Post-launch | — |
 | Project photos & case studies | ✅ Static `/projects` | — |
@@ -243,6 +243,6 @@ app/api/ask/route.ts
 
 ---
 
-*Last updated: June 4, 2026 — run `node scripts/verify-production-workflow.mjs` for smoke tests.*
+*Last updated: June 9, 2026 — run `node scripts/verify-production-workflow.mjs` for smoke tests.*
 
 **Verification scripts:** `scripts/verify-production-workflow.mjs`, `scripts/verify-stripe-e2e.mjs`, `scripts/verify-vercel-env.mjs`, `scripts/verify-enterprise-tier.mjs`
