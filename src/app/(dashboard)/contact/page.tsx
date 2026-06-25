@@ -1,4 +1,5 @@
 // src/app/contact/page.tsx
+import ContactForm from "../../components/ContactForm";
 import PageWrapper from "../../components/PageWrapper";
 
 export default function ContactPage() {
@@ -19,6 +20,8 @@ export default function ContactPage() {
             our team is here to help.
           </p>
         </div>
+
+        <ContactForm source="contact" />
 
         {/* Primary actions */}
         <div className="grid gap-6 sm:grid-cols-2">

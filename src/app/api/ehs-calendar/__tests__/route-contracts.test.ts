@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 
 import { POST as checkoutPost } from "../../billing/checkout/route";
+import { POST as contactPost } from "../../contact/route";
 import { POST as exportPost } from "../export/route";
 import { POST as emailPost } from "../email/route";
 import { GET as entitlementGet } from "../../billing/entitlement/route";
@@ -50,5 +51,41 @@ describe("route contracts", () => {
     });
     const res = await emailPost(req);
     expect(res.status).toBe(503);
+  });
+
+  it("returns 400 for contact without name", async () => {
+    const req = new NextRequest("http://localhost/api/contact", {
+      method: "POST",
+      body: JSON.stringify({ email: "test@example.com", message: "Hello" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await contactPost(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/name/i);
+  });
+
+  it("returns 400 for contact with invalid email", async () => {
+    const req = new NextRequest("http://localhost/api/contact", {
+      method: "POST",
+      body: JSON.stringify({ name: "Test", email: "bad-email", message: "Hello" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await contactPost(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/email/i);
+  });
+
+  it("returns 400 for contact without message", async () => {
+    const req = new NextRequest("http://localhost/api/contact", {
+      method: "POST",
+      body: JSON.stringify({ name: "Test", email: "test@example.com" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await contactPost(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/message/i);
   });
 });

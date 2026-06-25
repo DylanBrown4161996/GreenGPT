@@ -1,11 +1,6 @@
 // app/api/contact/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY! // anon key; RLS controls access
-);
+import { getSupabase } from "@/lib/server/supabase";
 
 function isValidEmail(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
@@ -33,13 +28,21 @@ export async function POST(req: NextRequest) {
     if (!isValidEmail(email)) return NextResponse.json({ error: "Invalid email." }, { status: 400 });
     if (!message) return NextResponse.json({ error: "Message is required." }, { status: 400 });
 
+    const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
+    }
+
+    const sourceRaw = clampText(body?.source, 40);
+    const source = sourceRaw ?? "home";
+
     const { error } = await supabase.from("contact_submissions").insert({
       name,
       email,
       company: company ?? null,
       phone: phone ?? null,
       message,
-      source: "home",
+      source,
     });
 
     if (error) {
