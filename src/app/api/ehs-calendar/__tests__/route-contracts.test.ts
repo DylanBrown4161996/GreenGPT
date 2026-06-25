@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 import { POST as checkoutPost } from "../../billing/checkout/route";
 import { POST as contactPost } from "../../contact/route";
+import { POST as intakePost } from "../../intake/route";
 import { POST as exportPost } from "../export/route";
 import { POST as emailPost } from "../email/route";
 import { GET as entitlementGet } from "../../billing/entitlement/route";
@@ -87,5 +88,22 @@ describe("route contracts", () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.error).toMatch(/message/i);
+  });
+
+  it("returns 400 for intake without company", async () => {
+    const req = new NextRequest("http://localhost/api/intake", {
+      method: "POST",
+      body: JSON.stringify({
+        contact: "Jane",
+        email: "jane@example.com",
+        state: "New Jersey",
+        industry: "chemical_mfg",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await intakePost(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/company/i);
   });
 });

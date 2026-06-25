@@ -506,15 +506,27 @@ export default function EHSCalendarLanding() {
           <p style={{ fontSize: 17, fontWeight: 300, opacity: 0.7, lineHeight: 1.6, margin: "0 auto 32px", maxWidth: 540 }}>
             Select your industry, jurisdiction, and facility hazards. Our regulatory rules engine generates a personalized compliance calendar — instantly, for free.
           </p>
-          <button type="button" onClick={startTool} style={{
-            background: B.emerald, color: B.charcoal, border: "none", borderRadius: 12,
-            padding: "16px 40px", fontSize: 16, fontWeight: 700, fontFamily: sans,
-            cursor: "pointer", boxShadow: `0 4px 20px rgba(16,185,129,0.35)`,
-            transition: "transform 0.2s ease",
-          }}>
-            Generate my calendar — free
-          </button>
-          <div style={{ marginTop: 16, fontSize: 13, opacity: 0.4 }}>No signup required. See results in 60 seconds.</div>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button type="button" onClick={startTool} style={{
+              background: B.emerald, color: B.charcoal, border: "none", borderRadius: 12,
+              padding: "16px 40px", fontSize: 16, fontWeight: 700, fontFamily: sans,
+              cursor: "pointer", boxShadow: `0 4px 20px rgba(16,185,129,0.35)`,
+              transition: "transform 0.2s ease",
+            }}>
+              Generate my calendar — free
+            </button>
+            <Link href="/intake" style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              background: "transparent", color: B.white, border: `2px solid ${B.sage}`,
+              borderRadius: 12, padding: "14px 32px", fontSize: 16, fontWeight: 600,
+              fontFamily: sans, textDecoration: "none",
+            }}>
+              Get managed compliance →
+            </Link>
+          </div>
+          <div style={{ marginTop: 16, fontSize: 13, opacity: 0.4 }}>
+            Free diagnostic tool · Or let us manage your entire program
+          </div>
         </div>
       </div>
 
@@ -855,6 +867,42 @@ export default function EHSCalendarLanding() {
           )}
       </Section>
 
+      {step === 3 && (
+        <Section bg={B.white}>
+          <div style={{
+            maxWidth: 640, margin: "0 auto", textAlign: "center",
+            padding: "28px 24px", borderRadius: 16, border: `2px solid ${B.emerald}`,
+            background: `linear-gradient(180deg, ${B.mint} 0%, ${B.white} 100%)`,
+          }}>
+            <div style={{ fontFamily: mono, fontSize: 10, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: B.forest, marginBottom: 8 }}>
+              {events.length} obligations identified
+            </div>
+            <h3 style={{ fontFamily: serif, fontSize: 24, color: B.forest, margin: "0 0 10px" }}>
+              Don&apos;t want to manage this yourself?
+            </h3>
+            <p style={{ fontFamily: sans, fontSize: 14, color: "#666", fontWeight: 300, lineHeight: 1.6, margin: "0 0 20px" }}>
+              Send us your facility details once. We deliver a maintained compliance program — calendar, gap assessment, monthly briefings, and regulatory monitoring. You review and approve.
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <Link href="/intake" style={{
+                display: "inline-block", background: B.forest, color: B.white,
+                borderRadius: 10, padding: "14px 28px", fontSize: 14, fontWeight: 700,
+                fontFamily: sans, textDecoration: "none",
+              }}>
+                Let us handle this for you →
+              </Link>
+              <Link href="/briefing/demo" style={{
+                display: "inline-block", background: B.white, color: B.slate,
+                borderRadius: 10, padding: "14px 28px", fontSize: 14, fontWeight: 600,
+                fontFamily: sans, textDecoration: "none", border: "1.5px solid #DDD",
+              }}>
+                Preview monthly briefing
+              </Link>
+            </div>
+          </div>
+        </Section>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* SECTION 3 — EMAIL CAPTURE (shows after results)                   */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -1098,25 +1146,29 @@ export default function EHSCalendarLanding() {
       <Section bg={B.forest} style={{ color: B.white }}>
         <div style={{ display: "flex", alignItems: "center", gap: 40, maxWidth: 760, margin: "0 auto", flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{ fontFamily: mono, fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: B.emerald, marginBottom: 8 }}>Beyond software</div>
-            <h2 style={{ fontFamily: serif, fontSize: 30, margin: "0 0 12px", color: B.white, fontWeight: 400 }}>Need help closing compliance gaps?</h2>
+            <div style={{ fontFamily: mono, fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: B.emerald, marginBottom: 8 }}>Managed compliance</div>
+            <h2 style={{ fontFamily: serif, fontSize: 30, margin: "0 0 12px", color: B.white, fontWeight: 400 }}>We run your compliance program</h2>
             <p style={{ fontSize: 14, fontWeight: 300, opacity: 0.7, lineHeight: 1.7, margin: "0 0 24px" }}>
-              Our EHS consultants audit your program against this calendar, build SOPs for each obligation, train your team, and prepare you for ISO 14001 certification.
+              Facilities send us their permits and hazard profile once. We map obligations, monitor regulatory changes, send monthly briefings with pre-filled filings, and maintain your audit trail. You review and approve — we handle the rest.
             </p>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              {["Gap assessments", "SOP development", "ISO 14001 prep", "Training programs"].map(s => (
+              {["Gap assessments", "Monthly briefings", "Regulatory monitoring", "Document prep"].map(s => (
                 <span key={s} style={{ fontFamily: mono, fontSize: 11, padding: "4px 12px", borderRadius: 6, background: "rgba(16,185,129,0.15)", color: B.sage }}>{s}</span>
               ))}
             </div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <a href="https://cal.com/the-green-executive-briefing" target="_blank" rel="noopener noreferrer" style={{
+            <Link href="/intake" style={{
               display: "inline-block", background: B.emerald, color: B.charcoal,
               borderRadius: 12, padding: "16px 36px", fontSize: 16, fontWeight: 700,
               fontFamily: sans, textDecoration: "none",
               boxShadow: "0 4px 20px rgba(16,185,129,0.35)",
-            }}>Book a free consultation</a>
-            <div style={{ fontSize: 12, opacity: 0.4, marginTop: 10 }}>30-minute call · No commitment</div>
+            }}>Start facility intake</Link>
+            <div style={{ fontSize: 12, opacity: 0.4, marginTop: 10 }}>
+              <a href="https://cal.com/the-green-executive-briefing" target="_blank" rel="noopener noreferrer" style={{ color: B.sage, textDecoration: "underline" }}>
+                Or book a free consultation
+              </a>
+            </div>
           </div>
         </div>
       </Section>

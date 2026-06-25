@@ -45,6 +45,9 @@ export default function NavigationMenu() {
       <Link href="/" className={linkClass("/")}>
         Home
       </Link>
+      <Link href="/intake" className={linkClass("/intake")}>
+        Managed Compliance
+      </Link>
       <Link href="/services" className={linkClass("/services")}>
         Services
       </Link>
@@ -84,6 +87,11 @@ export default function NavigationMenu() {
         <li>
         <Link href="/" onClick={closeMenu}>
           Home
+        </Link>
+        </li>
+        <li>
+        <Link href="/intake" onClick={closeMenu}>
+          Managed Compliance
         </Link>
         </li>
         <li>

@@ -19,7 +19,14 @@ Optional override:
 
 ```env
 ADMIN_EMAILS=dylanbrown416@gmail.com,dylan.brown@bodiibrand.com,dylan.brown@greengptadvisory.com
+INTAKE_NOTIFY_EMAIL=dylan.brown@greengptadvisory.com
 ```
+
+`INTAKE_NOTIFY_EMAIL` controls who receives email when a facility submits `/intake`. Defaults to `ADMIN_EMAILS` when unset. Requires `RESEND_API_KEY` and `RESEND_FROM`.
+
+## Facility intakes
+
+View submissions at `/admin/intakes` (service role reads `facility_intakes` table).
 
 ## Access control
 

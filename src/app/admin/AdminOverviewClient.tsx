@@ -122,6 +122,7 @@ export default function AdminOverviewClient({ data }: { data: AdminOverviewData 
   ];
 
   const usageItems = [
+    { label: "Facility intakes (30d)", value: data.featureUsage30d.facilityIntakes },
     { label: "Reminder rows (30d)", value: data.featureUsage30d.reminderEmailsSent },
     { label: "Calendars emailed (30d)", value: data.featureUsage30d.calendarsEmailed },
     { label: "Documents uploaded (30d)", value: data.featureUsage30d.documentsUploaded },

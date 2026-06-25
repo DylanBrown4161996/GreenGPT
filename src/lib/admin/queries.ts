@@ -1,5 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BillingTier } from "@/lib/billing/tier";
+import type { IntakeFormData } from "@/lib/managed-compliance/intake";
+
+export type AdminIntakeRow = {
+  id: string;
+  createdAt: string;
+  email: string;
+  company: string;
+  contactName: string;
+  state: string;
+  industry: string;
+  payload: IntakeFormData;
+};
 
 export type AdminSubscriberRow = {
   email: string;
@@ -28,6 +40,7 @@ export type AdminOverviewData = {
     reminderEmailsSent: number;
     calendarsEmailed: number;
     documentsUploaded: number;
+    facilityIntakes: number;
   };
   subscribers: AdminSubscriberRow[];
 };
@@ -70,6 +83,7 @@ export async function fetchAdminOverview(supabase: SupabaseClient): Promise<Admi
     { count: emailSendCount },
     { count: reminderCount },
     { count: docCount },
+    { count: intakeCount },
     subEmails,
     reminderEmails,
     calendarEmails,
@@ -90,6 +104,10 @@ export async function fetchAdminOverview(supabase: SupabaseClient): Promise<Admi
       .from("obligation_documents")
       .select("*", { count: "exact", head: true })
       .gte("uploaded_at", since30d),
+    supabase
+      .from("facility_intakes")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", since30d),
     distinctEmails(supabase, "subscriptions", "customer_email"),
     distinctEmails(supabase, "deadline_reminders", "user_email"),
     distinctEmails(supabase, "calendar_email_sends", "email"),
@@ -146,7 +164,29 @@ export async function fetchAdminOverview(supabase: SupabaseClient): Promise<Admi
       reminderEmailsSent: reminderCount ?? 0,
       calendarsEmailed: emailSendCount ?? 0,
       documentsUploaded: docCount ?? 0,
+      facilityIntakes: intakeCount ?? 0,
     },
     subscribers,
   };
+}
+
+export async function fetchFacilityIntakes(supabase: SupabaseClient): Promise<AdminIntakeRow[]> {
+  const { data, error } = await supabase
+    .from("facility_intakes")
+    .select("id,created_at,email,company,contact_name,state,industry,payload")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    email: row.email,
+    company: row.company,
+    contactName: row.contact_name,
+    state: row.state,
+    industry: row.industry,
+    payload: (row.payload ?? {}) as IntakeFormData,
+  }));
 }

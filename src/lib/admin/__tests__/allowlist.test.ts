@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAdminEmail } from "../allowlist";
+import { getAdminNotifyEmails, getIntakeNotifyEmails, isAdminEmail } from "../allowlist";
 
 describe("isAdminEmail", () => {
   it("allows owner emails case-insensitively", () => {
@@ -12,5 +12,11 @@ describe("isAdminEmail", () => {
     expect(isAdminEmail("stranger@example.com")).toBe(false);
     expect(isAdminEmail(null)).toBe(false);
     expect(isAdminEmail("")).toBe(false);
+  });
+
+  it("returns default notify emails", () => {
+    const emails = getIntakeNotifyEmails();
+    expect(emails.length).toBeGreaterThan(0);
+    expect(getAdminNotifyEmails()).toEqual(emails);
   });
 });
